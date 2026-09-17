@@ -2,7 +2,33 @@ import re
 import subprocess
 
 # Function to get the real git diff between the current branch and the target branch (default is main...HEAD)
-def get_real_git_diff(target: str = "main...HEAD") -> str:
+def get_default_branch() -> str:
+    """Detects whether the primary base branch is 'main' or 'master'."""
+    for branch in ["main", "master", "origin/main", "origin/master"]:
+        try:
+            # Check if the branch exists in the git reference log
+            subprocess.run(
+                ["git", "rev-parse", "--verify", branch],
+                capture_output=True,
+                check=True,
+            )
+            return branch
+        except subprocess.CalledProcessError:
+            continue
+
+    # Default fallback if neither branch exists locally
+    return "HEAD~1"
+
+
+def get_real_git_diff(target: str = None) -> str:
+    """Fetches real git diff. Auto-detects base branch (main/master) if target is omitted."""
+    if target is None:
+        base_branch = get_default_branch()
+        target = (
+            f"{base_branch}...HEAD"
+            if base_branch != "HEAD~1"
+            else "HEAD~1 HEAD"
+        )
 # compare against mergebase
     try:
         # Primary attempt: Compare feature branch merge-base against HEAD

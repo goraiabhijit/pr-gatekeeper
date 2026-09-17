@@ -1,44 +1,64 @@
 import re
 import subprocess
 
-def get_real_git_diff(target: str = "HEAD") -> str:
-    # Check if HEAD~1 exists (is it the initial commit?)
+# Function to get the real git diff between the current branch and the target branch (default is main...HEAD)
+def get_real_git_diff(target: str = "main...HEAD") -> str:
+# compare against mergebase
     try:
-        subprocess.run(
-            ["git", "rev-parse", "--verify", "HEAD~1"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError:
-        print("[INFO] This is the initial commit.")
-        return ""
-
-    
-    try:
+        # Primary attempt: Compare feature branch merge-base against HEAD
         result = subprocess.run(
             ["git", "diff", target, "--", ".", ":(exclude)sanitizer.py"],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
-        temp=result.stdout
-        if not temp.strip():
+        diff_output = result.stdout
+
+        if not diff_output.strip():
             print("[INFO] No changes detected in the diff.")
             return ""
-        return result.stdout
+
+        return diff_output
+
     
-    except Exception as e:
-        print(f"Error reading git diff: {e}")
-        return ""
-
-
-
+    except subprocess.CalledProcessError:
+        print(f"[INFO] Target '{target}' unavailable. Falling back to HEAD~1.")
+         # Check if HEAD~1 exists (is it the initial commit?)
+        try:
+            subprocess.run(
+                ["git", "rev-parse", "--verify", "HEAD~1"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            print("[INFO] This is the initial commit.")
+            return ""
+        
+            
+        try:
+            result = subprocess.run(
+            ["git", "diff", "HEAD~1", "HEAD", "--", ".", ":(exclude)sanitizer.py"],
+            capture_output=True,
+            text=True,
+            check=True
+            )
+            temp=result.stdout
+            if not temp.strip():
+                print("[INFO] No changes detected in the diff.")
+                return ""
+            return temp
+            
+        except Exception as e:
+            print(f"Error reading git diff: {e}")
+            return ""
+    
+# sanitization function -replaces secret values with <REDACTED_SECRET> and returns a dict with findings
 
 def sanitize_and_scan_diff(raw_diff: str) -> dict:
         patterns = {
         "AWS_KEY": r'(?i)(aws_access_key_id|aws_secret_access_key)\s*=\s*["\'][A-Za-z0-9/+=]{16,}["\']',
-        "GENERIC_SECRET": r'(?i)(api_key|secret|password|bearer_token)\s*=\s*["\'][^"\'\s]{8,}["\']',
+        "GENERIC_SECRET": r'(?i)(api_key|secret|password|bearer_token)\s*=\s*["\'][^"\'\s]+["\']',
         "COMMITTED_ENV_FILE": r'(?i)(diff --git a/.*\.env|^\+\+\+ b/.*\.env)'
     }
         sanitized_diff = raw_diff
@@ -70,7 +90,7 @@ def sanitize_and_scan_diff(raw_diff: str) -> dict:
 
 
 if __name__ == "__main__":
-    real_diff = get_real_git_diff("HEAD~1")
+    real_diff = get_real_git_diff()
    
     if not real_diff.strip():
        print("[INFO] No diff available to scan. Skipping security check.")

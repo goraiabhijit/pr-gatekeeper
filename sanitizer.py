@@ -2,6 +2,19 @@ import re
 import subprocess
 
 def get_real_git_diff(target: str = "HEAD") -> str:
+    # Check if HEAD~1 exists (is it the initial commit?)
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD~1"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        print("[INFO] This is the initial commit.")
+        return ""
+
+    
     try:
         result = subprocess.run(
             ["git", "diff", target, "--", ".", ":(exclude)sanitizer.py"],
@@ -9,6 +22,10 @@ def get_real_git_diff(target: str = "HEAD") -> str:
             text=True,
             check=True
         )
+        temp=result.stdout
+        if not temp.strip():
+            print("[INFO] No changes detected in the diff.")
+            return ""
         return result.stdout
     
     except Exception as e:
@@ -56,7 +73,7 @@ if __name__ == "__main__":
     real_diff = get_real_git_diff("HEAD~1")
    
     if not real_diff.strip():
-       print("[INFO] This is the initial commit (no previous commit exists to diff against).")
+       print("[INFO] No diff available to scan. Skipping security check.")
 
     else:
         print("Git diff found. Scanning for secrets...")

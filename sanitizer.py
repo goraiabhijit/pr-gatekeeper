@@ -10,6 +10,8 @@ def get_real_git_diff(target: str = "main...HEAD") -> str:
             ["git", "diff", target, "--", ".", ":(exclude)sanitizer.py"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True,
         )
         diff_output = result.stdout
@@ -30,6 +32,8 @@ def get_real_git_diff(target: str = "main...HEAD") -> str:
                 check=True,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
         except subprocess.CalledProcessError:
             print("[INFO] This is the initial commit.")
@@ -41,6 +45,8 @@ def get_real_git_diff(target: str = "main...HEAD") -> str:
             ["git", "diff", "HEAD~1", "HEAD", "--", ".", ":(exclude)sanitizer.py"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True
             )
             temp=result.stdout

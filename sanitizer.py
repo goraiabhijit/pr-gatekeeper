@@ -1,6 +1,21 @@
 import re
 import subprocess
 
+
+    # Returns the name of the currently checked-out branch.
+def get_current_branch() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return ""
+
+
 # Function to get the real git diff between the current branch and the target branch (default is main...HEAD)
 def get_default_branch() -> str:
     """Detects whether the primary base branch is 'main' or 'master'."""
@@ -21,14 +36,16 @@ def get_default_branch() -> str:
 
 
 def get_real_git_diff(target: str = None) -> str:
-    """Fetches real git diff. Auto-detects base branch (main/master) if target is omitted."""
+    # """Fetches real git diff. Auto-detects base branch (main/master) if target is omitted."""
+    current_branch = get_current_branch()
+    base_branch = get_default_branch()
+
     if target is None:
-        base_branch = get_default_branch()
-        target = (
-            f"{base_branch}...HEAD"
-            if base_branch != "HEAD~1"
-            else "HEAD~1 HEAD"
-        )
+        if current_branch in ["main", "master"] or current_branch == "":
+            target = "HEAD~1 HEAD"
+        else:
+            target = f"{base_branch}...HEAD"
+            
 # compare against mergebase
     try:
         # Primary attempt: Compare feature branch merge-base against HEAD

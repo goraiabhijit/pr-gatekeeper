@@ -3,11 +3,20 @@ import sys
 from policy_evaluater import check_cedar_permission
 from sanitizer import get_real_git_diff, sanitize_and_scan_diff
 from strands import Agent
+from dotenv import load_dotenv
+from strands.models.gemini import GeminiModel
 
 
+# Load environment variables from .env file
+load_dotenv()
+
+gemini_model = GeminiModel(
+    model_id="gemini-3.5-flash-lite"  # or "gemini-2.5-pro"
+)
 # Initialize the Strands SDK Agent for generating PR code summaries
 pr_agent = Agent(
     name="PR-Summary-Agent",
+    model=gemini_model,
     system_prompt=(
         "You are a helpful security-focused code review assistant. "
         "Summarize key changes in the provided sanitized git diff using concise bullet points."
@@ -52,7 +61,6 @@ def run_pr_gatekeeper(
         print(
             f"   Reason: Detected {scan_results['vulnerability_count']} sensitive issue(s): {scan_results['detected_issues']}"
         )
-        sys.exit(1)
 
     print(
         "\n✅ [ALLOW] Cedar Policy Evaluation Passed! Safe to proceed with merge."
@@ -66,7 +74,7 @@ def run_pr_gatekeeper(
     prompt = f"Summarize the following pull request diff:\n\n```diff\n{scan_results['sanitized_diff']}\n```"
 
     try:
-        summary = pr_agent.run(prompt)
+        summary = pr_agent(prompt)
         print("\n" + "=" * 50)
         print("📝 PR CODE SUMMARY (Strands Agent)")
         print("=" * 50)
@@ -75,6 +83,7 @@ def run_pr_gatekeeper(
     except Exception as e:
         print(f"[WARNING] Could not generate AI summary: {e}")
 
+    sys.exit(1)
 
 if __name__ == "__main__":
     run_pr_gatekeeper()    

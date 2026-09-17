@@ -56,7 +56,7 @@ if __name__ == "__main__":
     real_diff = get_real_git_diff("HEAD~1")
    
     if not real_diff.strip():
-        print("No git diff found! Make sure you are inside a git repository with changes.") 
+       print("[INFO] This is the initial commit (no previous commit exists to diff against).")
 
     else:
         print("Git diff found. Scanning for secrets...")

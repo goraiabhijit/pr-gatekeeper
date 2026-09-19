@@ -15,18 +15,13 @@ The workflow runs the application in an AWS Lambda-compatible Python 3.11 Docker
 
 ```mermaid
 flowchart LR
-    A[Developer runs gatekeeper] --> B[scan_pr.py]
-    B --> C[Branch-aware git diff]
-    B --> D[events/temp_event.json]
-    D --> E[sam local invoke]
-    E --> F[Dockerized Lambda\nPRGatekeeperFunction]
-    F --> G[Regex sanitizer]
-    G --> H[Cedar policy evaluation]
-    F --> I[LocalStack S3\npr-gatekeeper-audits]
-    F --> J[Strands Agents]
-    J --> K[Google Gemini]
-    H --> L[ALLOW or DENY]
-    I --> M[JSON audit record]
+  A[Local Git repository] --> B[scan_pr.py]
+  B -->|git diff as raw_diff| C[SAM Lambda\nPRGatekeeperFunction]
+  C --> D[Sanitize and scan]
+  D --> E[Cedar policy]
+  E --> F[ALLOW or DENY]
+  E --> G[LocalStack S3\nAudit log]
+  G --> H[Strands Agents\nGoogle Gemini summary\nusing sanitized diff]
 ```
 
 The normal CLI path does **not** require `sam local start-api`, a running API server, or a public webhook tunnel such as ngrok. `scan_pr.py` writes a temporary API Gateway-style event and directly invokes the Lambda container with `subprocess.run`:

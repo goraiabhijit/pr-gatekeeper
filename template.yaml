@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PR Gatekeeper - Serverless PR Security Scanner & Gatekeeper
+
+Globals:
+  Function:
+    Timeout: 90
+    MemorySize: 512
+    Runtime: python3.11
+
+Resources:
+  # 1. LocalStack S3 Bucket for Storing Audit Logs
+  AuditLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: pr-gatekeeper-audits
+
+  # 2. PR Gatekeeper Lambda Function
+  PRGatekeeperFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          LOCALSTACK_ENDPOINT: http://host.docker.internal:4566
+          GEMINI_API_KEY: { Ref: GeminiApiKey }
+      Events:
+        GitHubWebhook:
+          Type: Api
+          Properties:
+            Path: /scan
+            Method: post
+
+Parameters:
+  GeminiApiKey:
+    Type: String
+    Description: Gemini API Key for Strands Agent
+    NoEcho: true
+    Default: "your_gemini_api_key_here"
+    
+Outputs:
+  PRGatekeeperApi:
+    Description: "API Gateway endpoint URL for PR Gatekeeper Lambda function"
+    Value:
+      Fn::Sub: "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/scan/"

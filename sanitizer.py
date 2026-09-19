@@ -1,12 +1,15 @@
 import re
 import subprocess
+import os
 
 
     # Returns the name of the currently checked-out branch.
-def get_current_branch() -> str:
+def get_current_branch(repo_path:str = None) -> str:
+    repo_dir = repo_path if repo_path else os.getcwd()
     try:
         result = subprocess.run(
             ["git", "branch", "--show-current"],
+            cwd=repo_dir,
             capture_output=True,
             text=True,
             check=True,
@@ -17,13 +20,15 @@ def get_current_branch() -> str:
 
 
 # Function to get the real git diff between the current branch and the target branch (default is main...HEAD)
-def get_default_branch() -> str:
-    """Detects whether the primary base branch is 'main' or 'master'."""
+def get_default_branch(repo_path: str = None) -> str:
+    # Detects whether the primary base branch is 'main' or 'master'.
+    repo_dir = repo_path if repo_path else os.getcwd()
     for branch in ["main", "master", "origin/main", "origin/master"]:
         try:
             # Check if the branch exists in the git reference log
             subprocess.run(
                 ["git", "rev-parse", "--verify", branch],
+                cwd=repo_dir,
                 capture_output=True,
                 check=True,
             )
@@ -35,22 +40,31 @@ def get_default_branch() -> str:
     return "HEAD~1"
 
 
-def get_real_git_diff(target: str = None) -> str:
-    # """Fetches real git diff. Auto-detects base branch (main/master) if target is omitted."""
-    current_branch = get_current_branch()
-    base_branch = get_default_branch()
+def get_real_git_diff(target: str = None, repo_path: str = None) -> str:
+    """Fetches real git diff. Auto-detects base branch (main/master) if target is omitted."""
+    repo_dir = repo_path if repo_path else os.getcwd()
+
+    try:
+        current_branch = get_current_branch(repo_path=repo_dir)
+        base_branch = get_default_branch(repo_path=repo_dir)
+    except FileNotFoundError:
+        print("[WARNING] Git executable not found in runtime environment. Returning empty diff.")
+        return ""
 
     if target is None:
         if current_branch in ["main", "master"] or current_branch == "":
             target = "HEAD~1 HEAD"
         else:
             target = f"{base_branch}...HEAD"
-            
-# compare against mergebase
+
+    # Split target string into command arguments if space is present (e.g. "HEAD~1 HEAD")
+    target_args = target.split() if " " in target else [target]
+
     try:
         # Primary attempt: Compare feature branch merge-base against HEAD
         result = subprocess.run(
-            ["git", "diff", target, "--", ".", ":(exclude)sanitizer.py"],
+            ["git", "diff"] + target_args + ["--", ".", ":(exclude)sanitizer.py"],
+            cwd=repo_dir,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -65,39 +79,44 @@ def get_real_git_diff(target: str = None) -> str:
 
         return diff_output
 
-    
+    except FileNotFoundError:
+        print("[WARNING] Git executable not found in runtime environment. Returning empty diff.")
+        return ""
+
     except subprocess.CalledProcessError:
         print(f"[INFO] Target '{target}' unavailable. Falling back to HEAD~1.")
-         # Check if HEAD~1 exists (is it the initial commit?)
+
+        # Check if HEAD~1 exists (is it the initial commit?)
         try:
             subprocess.run(
                 ["git", "rev-parse", "--verify", "HEAD~1"],
+                cwd=repo_dir,
                 check=True,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
             )
-        except subprocess.CalledProcessError:
-            print("[INFO] This is the initial commit.")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("[INFO] Initial commit or git unavailable.")
             return ""
-        
-            
+
         try:
             result = subprocess.run(
-            ["git", "diff", "HEAD~1", "HEAD", "--", ".", ":(exclude)sanitizer.py"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=True
+                ["git", "diff", "HEAD~1", "HEAD", "--", ".", ":(exclude)sanitizer.py"],
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=True,
             )
-            temp=result.stdout
+            temp = result.stdout
             if not temp.strip():
                 print("[INFO] No changes detected in the diff.")
                 return ""
             return temp
-            
+
         except Exception as e:
             print(f"Error reading git diff: {e}")
             return ""

@@ -1,0 +1,10 @@
+{
+  "body": {
+    "raw_diff": "diff --git a/config.py b/config.py\nindex 123456..789abc 100644\n--- a/config.py\n+++ b/config.py\n@@ -1,3 +1,3 @@\n-AWS_SECRET_ACCESS_KEY = \"OLD_KEY\"\n+AWS_SECRET_ACCESS_KEY = \"AKIAIOSFODNN7EXAMPLE\"\n",
+    "pull_request": {
+      "number": 1,
+      "title": "Add AWS credentials",
+      "user": { "login": "developer" }
+    }
+  }
+}

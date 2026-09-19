@@ -1,0 +1,6 @@
+boto3
+botocore
+python-dotenv
+cedarpy
+strands-agents
+google-genai

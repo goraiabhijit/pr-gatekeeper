@@ -144,8 +144,7 @@ def run_gatekeeper_scan():
     if process.stderr:
         print(process.stderr)
 
-    # The Lambda prints the Cedar verdict and AI summary during execution.
-    # Its API response only confirms completion, so no second summary is needed here.
+
     if process.returncode != 0:
         print(
             f"❌ SAM invocation failed with exit code {process.returncode}."

@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![AWS SAM](https://img.shields.io/badge/AWS%20SAM-local%20Lambda-232F3E?logo=amazonaws&logoColor=white)](https://docs.aws.amazon.com/serverless-application-model/)
 [![LocalStack](https://img.shields.io/badge/LocalStack-local%20AWS%20services-5A45FF)](https://localstack.cloud/)
-[![License](https://img.shields.io/badge/license-hackathon%20project-lightgrey)](#license)
+
 
 PR Gatekeeper is a self-contained, local serverless security scanner for hackathons. It evaluates Git changes before they are committed or pushed, detects likely secrets and policy violations, records an audit decision in local S3, and prints an AI-generated security summary.
 

@@ -312,6 +312,3 @@ A Cedar timeout is treated as `DENY`. Check that `security.cedar` is included in
 - The current CLI uses a machine-specific absolute project path in `GATEKEEPER_DIR`; update it when installing elsewhere.
 - The generated event is a local API Gateway-style simulation, not a complete GitHub webhook verifier.
 
-## License
-
-This repository is a hackathon-oriented project. Add the license and contribution terms appropriate for your distribution before publishing it as an open-source package.
